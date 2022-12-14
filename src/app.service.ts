@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import fs = require('fs');
+import path = require('path');
 
 @Injectable()
 export class AppService {
@@ -13,7 +14,14 @@ export class AppService {
     // Extract the required URL
     const urls = this.extractUrlFromFile(file);
     console.log(`Found total ${urls.length}`);
-    // this.downloadFile(urls[0]);
+    const uniqueUrl = [...new Set(urls)];
+    console.log(`Found uniqueUrl ${uniqueUrl.length}`);
+    if (uniqueUrl.length > 0) {
+      uniqueUrl.forEach((url) => {
+        this.downloadFile(url);
+      });
+    }
+
     // Download the File ..
     return 'Hello World!';
   }
@@ -38,8 +46,15 @@ export class AppService {
 
   private downloadFile(url: string) {
     const fileName = url.split('clips/')[1].split('?')[0];
-    console.log('this is ', fileName);
-    const writer = fs.createWriteStream(`../../${fileName}.ts`);
+    const filePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'Video',
+      `${fileName}`,
+    );
+    const writer = fs.createWriteStream(filePath);
     this.httpService
       .get(url, { responseType: 'stream' })
       .subscribe((response) => {
