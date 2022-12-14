@@ -1,2 +1,2 @@
 ## Download filr from HAR 
-  -- TO download file for HAR JSON 
+  - TO download file from HAR JSON 
