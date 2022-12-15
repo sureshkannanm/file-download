@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   FileTypeValidator,
   Get,
@@ -22,10 +23,11 @@ export class AppController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  uploadFile(
+  async uploadFile(
     @UploadedFile(new FileValidationPipe())
     file: Express.Multer.File,
+    @Body() form: any,
   ) {
-    return this.appService.processFile(file);
+    return await this.appService.processFile(file, form?.name);
   }
 }

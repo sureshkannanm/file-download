@@ -10,20 +10,26 @@ export class AppService {
     return 'Hello World!';
   }
 
-  processFile(file: Express.Multer.File): string {
+  async processFile(file: Express.Multer.File, name: string): Promise<string> {
     // Extract the required URL
     const urls = this.extractUrlFromFile(file);
-    console.log(`Found total ${urls.length}`);
     const uniqueUrl = [...new Set(urls)];
-    console.log(`Found uniqueUrl ${uniqueUrl.length}`);
+    console.log(`Found uniqueUrl ${uniqueUrl.length}`, name);
+
     if (uniqueUrl.length > 0) {
-      uniqueUrl.forEach((url) => {
-        this.downloadFile(url);
-      });
+      const filePath = path.join(__dirname, '..', '..', '..', 'Video', name);
+      if (!fs.existsSync(filePath)) {
+        fs.mkdirSync(filePath);
+      }
+      for (const url of uniqueUrl) {
+        // Download the File ..
+        await this.downloadFile(url, filePath);
+      }
     }
 
-    // Download the File ..
-    return 'Hello World!';
+    return new Promise((resolve) => {
+      resolve('Done');
+    });
   }
 
   private extractUrlFromFile(file: Express.Multer.File): string[] {
@@ -44,18 +50,11 @@ export class AppService {
     }
   }
 
-  private downloadFile(url: string) {
+  private async downloadFile(url: string, basePath: string): Promise<any> {
     const fileName = url.split('clips/')[1].split('?')[0];
-    const filePath = path.join(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      'Video',
-      `${fileName}`,
-    );
+    const filePath = path.join(basePath, `${fileName}`);
     const writer = fs.createWriteStream(filePath);
-    this.httpService
+    return await this.httpService
       .get(url, { responseType: 'stream' })
       .subscribe((response) => {
         response.data.pipe(writer);
