@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import fs = require('fs');
 import path = require('path');
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class AppService {
@@ -9,7 +10,12 @@ export class AppService {
   getHello(): string {
     return 'Hello World!';
   }
-
+  /**
+   *
+   * @param file - JSON FIle
+   * @param name - Name folder to created and saved
+   * @returns
+   */
   async processFile(file: Express.Multer.File, name: string): Promise<string> {
     // Extract the required URL
     const urls = this.extractUrlFromFile(file);
@@ -23,15 +29,20 @@ export class AppService {
       }
       for (const url of uniqueUrl) {
         // Download the File ..
+        console.log('Before Download');
         await this.downloadFile(url, filePath);
+        console.log('After Download');
       }
     }
 
-    return new Promise((resolve) => {
-      resolve('Done');
-    });
+    return 'Done';
   }
 
+  /**
+   *
+   * @param file - JSON FIle
+   * @returns list of URL extracted from HAR JOSN file
+   */
   private extractUrlFromFile(file: Express.Multer.File): string[] {
     const result = [];
     try {
@@ -50,18 +61,28 @@ export class AppService {
     }
   }
 
-  private async downloadFile(url: string, basePath: string): Promise<any> {
+  /**
+   *
+   * @param url - File Url to download
+   * @param basePath - Base path for saving the file
+   * @returns boolean
+   */
+  private async downloadFile(url: string, basePath: string): Promise<boolean> {
     const fileName = url.split('clips/')[1].split('?')[0];
-    const filePath = path.join(basePath, `${fileName}`);
-    const writer = fs.createWriteStream(filePath);
-    return await this.httpService
-      .get(url, { responseType: 'stream' })
-      .subscribe((response) => {
-        response.data.pipe(writer);
-        return new Promise((resolve, reject) => {
-          writer.on('finish', resolve);
-          writer.on('error', reject);
-        });
-      });
+    try {
+      const filePath = path.join(basePath, `${fileName}`);
+      const writer = fs.createWriteStream(filePath);
+
+      const response = await lastValueFrom(
+        this.httpService.get(url, { responseType: 'stream' }),
+      );
+
+      response?.data?.pipe(writer);
+
+      return true;
+    } catch (error) {
+      console.error(`downloadFile - Error processing, ${error}`);
+      return false;
+    }
   }
 }
